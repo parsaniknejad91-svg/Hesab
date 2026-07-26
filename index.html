@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>حساب</title>
+  <!-- version 1.1 -->
+  <style>
+    :root{
+      --bg:#f1f5f9;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --primary:#2563eb;
+      --danger:#dc2626;
+      --success:#15803d;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      padding:16px;
+    }
+    .container{
+      width:100%;
+      max-width:560px;
+      margin:0 auto;
+    }
+    h1{
+      text-align:center;
+      font-size:26px;
+      margin:10px 0 18px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 8px 24px rgba(15,23,42,.06);
+      margin-bottom:14px;
+    }
+    label{
+      display:block;
+      font-size:14px;
+      font-weight:700;
+      margin:12px 0 6px;
+    }
+    input{
+      width:100%;
+      height:48px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:0 12px;
+      font-size:16px;
+      background:#fff;
+      outline:none;
+    }
+    input:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    }
+    .actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:16px;
+    }
+    button{
+      border:0;
+      border-radius:12px;
+      min-height:46px;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .primary{background:var(--primary);color:#fff}
+    .secondary{background:#e2e8f0;color:var(--text)}
+    .danger{background:#fee2e2;color:var(--danger)}
+    .summary{
+      text-align:center;
+    }
+    .summary small{
+      color:var(--muted);
+      display:block;
+      margin-bottom:6px;
+    }
+    .total{
+      font-size:28px;
+      font-weight:800;
+      color:var(--success);
+      word-break:break-word;
+    }
+    .list-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .list-head h2{
+      font-size:18px;
+      margin:0;
+    }
+    .count{
+      color:var(--muted);
+      font-size:13px;
+    }
+    .item{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:13px;
+      margin-top:10px;
+      background:#fff;
+    }
+    .item-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .amount{
+      font-size:20px;
+      font-weight:800;
+      color:#1d4ed8;
+      direction:ltr;
+      text-align:left;
+    }
+    .meta{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.8;
+      overflow-wrap:anywhere;
+    }
+    .delete-btn{
+      width:100%;
+      margin-top:10px;
+      background:#fee2e2;
+      color:var(--danger);
+      min-height:40px;
+      font-size:14px;
+    }
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      padding:28px 8px;
+    }
+    .note{
+      font-size:12px;
+      color:var(--muted);
+      text-align:center;
+      line-height:1.7;
+      margin-top:10px;
+    }
+    @media (max-width:420px){
+      .actions{grid-template-columns:1fr}
+      .total{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>حساب</h1>
+
+    <section class="card">
+      <label for="date">تاریخ</label>
+      <input id="date" type="date" />
+
+      <label for="bank">نام کارت یا بانک</label>
+      <input id="bank" type="text" placeholder="مثلاً بانک ملت" autocomplete="off" />
+
+      <label for="amount">مبلغ</label>
+      <input id="amount" type="text" inputmode="numeric" placeholder="مثلاً 12500000" autocomplete="off" />
+
+      <label for="description">شرح</label>
+      <input id="description" type="text" placeholder="مثلاً خرید مصالح" autocomplete="off" />
+
+      <div class="actions">
+        <button class="primary" id="saveBtn" type="button">ثبت تراکنش</button>
+        <button class="secondary" id="exportBtn" type="button">خروجی Excel</button>
+      </div>
+      <div class="note">اطلاعات داخل مرورگر همین گوشی ذخیره می‌شود.</div>
+    </section>
+
+    <section class="card summary">
+      <small>جمع کل</small>
+      <div class="total" id="total">0</div>
+    </section>
+
+    <section class="card">
+      <div class="list-head">
+        <h2>تراکنش‌ها</h2>
+        <span class="count" id="count">0 مورد</span>
+      </div>
+      <div id="list"></div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "hesab_transactions_v1";
+    let transactions = [];
+
+    const dateInput = document.getElementById("date");
+    const bankInput = document.getElementById("bank");
+    const amountInput = document.getElementById("amount");
+    const descriptionInput = document.getElementById("description");
+    const saveBtn = document.getElementById("saveBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const listEl = document.getElementById("list");
+    const totalEl = document.getElementById("total");
+    const countEl = document.getElementById("count");
+
+    function todayISO() {
+      const d = new Date();
+      const offset = d.getTimezoneOffset();
+      return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
+    }
+
+    function normalizeDigits(value) {
+      const persian = "۰۱۲۳۴۵۶۷۸۹";
+      const arabic = "٠١٢٣٤٥٦٧٨٩";
+      return String(value)
+        .replace(/[۰-۹]/g, d => persian.indexOf(d))
+        .replace(/[٠-٩]/g, d => arabic.indexOf(d));
+    }
+
+    function parseAmount(value) {
+      const clean = normalizeDigits(value).replace(/[,\s٬،]/g, "");
+      const number = Number(clean);
+      return Number.isFinite(number) ? number : NaN;
+    }
+
+    function formatAmount(value) {
+      return Number(value || 0).toLocaleString("en-US");
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+        return true;
+      } catch (error) {
+        alert("ذخیره‌سازی مرورگر در دسترس نیست. برنامه را از لینک GitHub Pages در Safari باز کنید.");
+        return false;
+      }
+    }
+
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        transactions = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        transactions = [];
+      }
+    }
+
+    function addTransaction() {
+      const date = dateInput.value;
+      const bank = bankInput.value.trim();
+      const amount = parseAmount(amountInput.value);
+      const description = descriptionInput.value.trim();
+
+      if (!date) {
+        alert("تاریخ را وارد کنید.");
+        dateInput.focus();
+        return;
+      }
+      if (!bank) {
+        alert("نام کارت یا بانک را وارد کنید.");
+        bankInput.focus();
+        return;
+      }
+      if (!Number.isFinite(amount) || amount <= 0) {
+        alert("مبلغ معتبر وارد کنید.");
+        amountInput.focus();
+        return;
+      }
+
+      const item = {
+        id: Date.now().toString() + Math.random().toString(16).slice(2),
+        date,
+        bank,
+        amount,
+        description,
+        createdAt: new Date().toISOString()
+      };
+
+      transactions.unshift(item);
+
+      if (!saveToStorage()) {
+        transactions.shift();
+        return;
+      }
+
+      amountInput.value = "";
+      descriptionInput.value = "";
+      bankInput.focus();
+      render();
+    }
+
+    function deleteTransaction(id) {
+      const item = transactions.find(x => x.id === id);
+      if (!item) return;
+      if (!confirm("این تراکنش حذف شود؟")) return;
+
+      transactions = transactions.filter(x => x.id !== id);
+      saveToStorage();
+      render();
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function render() {
+      const total = transactions.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      totalEl.textContent = formatAmount(total);
+      countEl.textContent = `${transactions.length} مورد`;
+
+      if (!transactions.length) {
+        listEl.innerHTML = '<div class="empty">هنوز تراکنشی ثبت نشده است.</div>';
+        return;
+      }
+
+      listEl.innerHTML = transactions.map(item => `
+        <article class="item">
+          <div class="item-top">
+            <strong>${escapeHtml(item.bank)}</strong>
+            <div class="amount">${formatAmount(item.amount)}</div>
+          </div>
+          <div class="meta">
+            <div>تاریخ: ${escapeHtml(item.date)}</div>
+            <div>شرح: ${escapeHtml(item.description || "—")}</div>
+          </div>
+          <button class="delete-btn" type="button" data-id="${item.id}">حذف</button>
+        </article>
+      `).join("");
+
+      // حذف با event delegation تا روی Safari آیفون هم پایدار باشد.
+      // Listener فقط یک‌بار پایین صفحه ثبت می‌شود.
+    }
+
+    function csvEscape(value) {
+      const text = String(value ?? "");
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function exportExcel() {
+      if (!transactions.length) {
+        alert("تراکنشی برای خروجی وجود ندارد.");
+        return;
+      }
+
+      const total = transactions.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const lines = [
+        ["تاریخ", "کارت یا بانک", "مبلغ", "شرح"],
+        ...transactions.map(item => [
+          item.date,
+          item.bank,
+          Number(item.amount),
+          item.description || ""
+        ]),
+        ["جمع کل", "", total, ""]
+      ];
+
+      const csv = "\ufeff" + lines
+        .map(row => row.map(csvEscape).join(","))
+        .join("\r\n");
+
+      const fileDate = new Date().toISOString().slice(0, 10);
+      const filename = `hesab-${fileDate}.csv`;
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+
+      // روش اصلی: دانلود مستقیم
+      try {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        // در Safari آیفون گاهی فایل در تب جدید باز می‌شود؛ این رفتار طبیعی است.
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } catch (error) {
+        // روش جایگزین برای بعضی نسخه‌های iOS
+        const reader = new FileReader();
+        reader.onload = () => window.open(reader.result, "_blank");
+        reader.readAsDataURL(blob);
+      }
+    }
+
+    amountInput.addEventListener("input", () => {
+      const cursorAtEnd = amountInput.selectionStart === amountInput.value.length;
+      const numeric = normalizeDigits(amountInput.value).replace(/[^\d]/g, "");
+      amountInput.value = numeric ? Number(numeric).toLocaleString("en-US") : "";
+      if (cursorAtEnd) {
+        amountInput.setSelectionRange(amountInput.value.length, amountInput.value.length);
+      }
+    });
+
+    saveBtn.addEventListener("click", addTransaction);
+    exportBtn.addEventListener("click", exportExcel);
+
+    listEl.addEventListener("click", event => {
+      const button = event.target.closest(".delete-btn");
+      if (!button) return;
+      event.preventDefault();
+      deleteTransaction(button.dataset.id);
+    });
+
+    [bankInput, amountInput, descriptionInput].forEach(input => {
+      input.addEventListener("keydown", event => {
+        if (event.key === "Enter") addTransaction();
+      });
+    });
+
+    dateInput.value = todayISO();
+    loadFromStorage();
+    render();
+  </script>
+</body>
+</html>
